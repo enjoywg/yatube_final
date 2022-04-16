@@ -85,4 +85,3 @@ class PostsURLTests(TestCase):
             f'/profile/{author.username}/unfollow/'
         )
         self.assertRedirects(response, f'/profile/{author.username}/')
-
