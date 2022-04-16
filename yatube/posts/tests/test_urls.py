@@ -3,7 +3,7 @@ from http import HTTPStatus
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 
-from ..models import Group, Post
+from ..models import Group, Post, Follow
 
 User = get_user_model()
 
@@ -33,16 +33,6 @@ class PostsURLTests(TestCase):
              'posts/create_post.html'),
             ('/create/', 'posts/create_post.html'),
             ('/follow/', 'posts/follow.html'),
-        ]
-        cls.redirect_urls = [
-            (
-                f'/profile/{cls.user.username}/follow/',
-                f'/profile/{cls.user.username}/'
-            ),
-            (
-                f'/profile/{cls.user.username}/unfollow/',
-                f'/profile/{cls.user.username}/'
-            )
         ]
 
     def setUp(self):
@@ -78,8 +68,21 @@ class PostsURLTests(TestCase):
                 response = self.authorized_client.get(url)
                 self.assertTemplateUsed(response, template)
 
-    def test_redirect_urls(self):
-        for url, url_to in self.redirect_urls:
-            with self.subTest(url=url):
-                response = self.authorized_client.get(url)
-                self.assertRedirects(response, url_to)
+    def test_follow_url(self):
+        author = User.objects.create_user(username='author')
+        response = self.authorized_client.get(
+            f'/profile/{author.username}/follow/'
+        )
+        self.assertRedirects(response, f'/profile/{author.username}/')
+
+    def test_unfollow_url(self):
+        author = User.objects.create_user(username='author')
+        Follow.objects.create(
+            user=self.user,
+            author=author
+        )
+        response = self.authorized_client.get(
+            f'/profile/{author.username}/unfollow/'
+        )
+        self.assertRedirects(response, f'/profile/{author.username}/')
+
