@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Об авторе проекта{% endblock %}
+{% block content %}
+  <div class="row">
+    <aside class="col-md-2">
+      <div><img src="{% static 'img/enjoy.jpg' %}" alt="ava" class="img-fluid"></div>
+      <div class="text-center">
+        <p>enjoyw</p>
+        <p>27 years old</p>
+        <p>Luxembourg</p>
+      </div>
+    </aside>
+    <div class="col-md-1"></div>
+    <article class="col-md-9">
+      <h1>Привет, Мир</h1>
+      <p>I am enjoyw</p>
+      <p>
+        Я изучаю Python и Django в Яндекс.Практикум
+      </p>
+      <p>Также на FreeCodeCamp я изучаю HTML/CSS</p>
+      <p>
+        <a href="https://github.com/enjoywg">Github</a>
+        <a href="#">Telegram</a>
+        <a href="#">Twitter</a>
+      </p>
+    </article>
+  </div>
+{% endblock %}
