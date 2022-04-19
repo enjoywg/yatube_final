@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 
-from ..models import SLICE_SIZE, Group, Post, Comment, Follow
+from ..models import SLICE_SIZE, Comment, Follow, Group, Post
 
 User = get_user_model()
 
