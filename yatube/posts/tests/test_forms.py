@@ -163,6 +163,6 @@ class PostFormTests(TestCase):
             ).exists()
         )
         self.assertEqual(
-            response.context['comments'][0].text,
+            response.context['post'].comments.all()[0].text,
             self.form_comment_data['text']
         )
