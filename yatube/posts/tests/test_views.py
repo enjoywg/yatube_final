@@ -1,16 +1,23 @@
+import shutil
+import tempfile
 from datetime import datetime
 
 from django import forms
+from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 
 from ..models import Comment, Follow, Group, Post
+from ..views import POSTS_ON_PAGE
 
 User = get_user_model()
+TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
 
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
 class PostSetUpTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
@@ -26,6 +33,11 @@ class PostSetUpTestCase(TestCase):
             reverse('posts:group_list', kwargs={'slug': cls.group.slug}),
             reverse('posts:profile', kwargs={'username': cls.user.username})
         ]
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
 
 
 class PostsViewsTests(PostSetUpTestCase):
@@ -112,9 +124,7 @@ class PostsViewsTests(PostSetUpTestCase):
         self.assertEqual(type(post.pub_date), datetime)
         self.assertEqual(post.author, self.user)
         self.assertEqual(post.group, self.group)
-        self.assertEqual(
-            response.context['comments'][0].text, self.comment.text
-        )
+        self.assertEqual(post.comments.all()[0].text, self.comment.text)
 
     def test_post_edit_and_post_create_show_correct_context(self):
         """Шаблон post_create и post_edit сформированы с правильной формой
@@ -175,16 +185,22 @@ class PostsViewsTests(PostSetUpTestCase):
     def test_posts_index_cache(self):
         post_2 = Post.objects.create(
             author=self.user,
-            text='Тестовый пост 2',
+            text='Тестовыйddddddd пост 2',
             group=self.group,
         )
-        content = self.authorized_client.get(reverse('posts:index')).content
+        cache.clear()
+        self.authorized_client.get(reverse('posts:index')).content
         post_2.delete()
         content_after_delete = self.authorized_client.get(
             reverse('posts:index')).content
 
-        self.assertEqual(content_after_delete, content)
+        self.assertIn(post_2.text.encode(), content_after_delete)
         self.assertEqual(Post.objects.all().count(), 1)
+
+        cache.clear()
+        content_after_clear_cache = self.authorized_client.get(
+            reverse('posts:index')).content
+        self.assertNotIn(post_2.text.encode(), content_after_clear_cache)
 
 
 class PaginatorViewsTest(PostSetUpTestCase):
@@ -197,7 +213,7 @@ class PaginatorViewsTest(PostSetUpTestCase):
                 text=f'Тестовый пост {i + 1}',
                 group=cls.group
             )
-            for i in range(17)
+            for i in range(POSTS_ON_PAGE + 7)
         )
 
     def setUp(self):
@@ -206,14 +222,17 @@ class PaginatorViewsTest(PostSetUpTestCase):
     def test_paginator(self):
         """Паджинатор отображает верное количество постов"""
         urls = {
-            reverse('posts:index'): 10,
+            reverse('posts:index'): POSTS_ON_PAGE,
             reverse('posts:index') + '?page=2': 7,
-            reverse('posts:group_list', kwargs={'slug': self.group.slug}): 10,
+            reverse(
+                'posts:group_list', kwargs={'slug': self.group.slug}
+            ): POSTS_ON_PAGE,
             reverse(
                 'posts:group_list', kwargs={'slug': self.group.slug}
             ) + '?page=2': 7,
             reverse(
-                'posts:profile', kwargs={'username': self.user.username}): 10,
+                'posts:profile', kwargs={'username': self.user.username}
+            ): POSTS_ON_PAGE,
             reverse(
                 'posts:profile', kwargs={'username': self.user.username}
             ) + '?page=2': 7
@@ -291,10 +310,10 @@ class PostsFollowTestCase(PostSetUpTestCase):
         url = reverse('posts:profile_follow', kwargs={'username': self.author})
         self.authorized_client.get(url)
 
-        self.assertEqual(Follow.objects.filter(
+        self.assertTrue(Follow.objects.filter(
             user=self.user,
             author=self.author
-        ).exists(), True)
+        ).exists())
 
     def test_auth_user_can_unfollow_other_users(self):
         Follow.objects.create(user=self.user, author=self.author)
@@ -303,10 +322,10 @@ class PostsFollowTestCase(PostSetUpTestCase):
         )
         self.authorized_client.get(url)
 
-        self.assertEqual(Follow.objects.filter(
+        self.assertFalse(Follow.objects.filter(
             user=self.user,
             author=self.author
-        ).exists(), False)
+        ).exists())
 
     def test_new_author_post_exists_in_follower_feed(self):
         Follow.objects.create(user=self.user, author=self.author)

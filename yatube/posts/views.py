@@ -44,8 +44,10 @@ def profile(request, username):
     user_obj = get_object_or_404(User, username=username)
     user_posts = user_obj.posts.all().order_by('-pub_date')
     page_obj = paginator(request, user_posts, POSTS_ON_PAGE)
-    following_users = [follower.user for follower in user_obj.following.all()]
-    following = request.user in following_users
+    following = False
+    if request.user.is_authenticated:
+        following = Follow.objects.filter(user=request.user,
+                                          author=user_obj).exists()
     context = {
         'page_obj': page_obj,
         'user_obj': user_obj,
@@ -57,11 +59,9 @@ def profile(request, username):
 def post_detail(request, post_id):
     post = get_object_or_404(Post, pk=post_id)
     form = CommentForm()
-    comments = Comment.objects.filter(post=post_id)
     context = {
         'post': post,
         'form': form,
-        'comments': comments,
     }
     return render(request, 'posts/post_detail.html', context)
 
@@ -94,10 +94,9 @@ def post_edit(request, post_id):
         files=request.FILES or None,
         instance=post
     )
-    if request.method == 'POST':
-        if form.is_valid():
-            form.save()
-            return redirect('posts:post_detail', post_id)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        return redirect('posts:post_detail', post_id)
 
     context = {
         'form': form,
@@ -121,8 +120,8 @@ def add_comment(request, post_id):
 
 @login_required
 def follow_index(request):
-    authors = request.user.follower.values_list('author', flat=True)
-    posts = Post.objects.filter(author__id__in=authors).order_by('-pub_date')
+    posts = Post.objects.filter(author__following__user=request.user
+                                ).order_by('-pub_date')
     page_obj = paginator(request, posts, POSTS_ON_PAGE)
     context = {
         'page_obj': page_obj,
@@ -146,7 +145,7 @@ def profile_follow(request, username):
 
 @login_required
 def profile_unfollow(request, username):
-    Follow.objects.get(
+    Follow.objects.filter(
         user=request.user,
         author=User.objects.get(username=username)
     ).delete()

@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.db import models
 
 User = get_user_model()
+SLICE_SIZE = 15
 
 
 class Post(models.Model):
@@ -35,7 +36,7 @@ class Post(models.Model):
     )
 
     def __str__(self):
-        return self.text[:15]
+        return self.text[:SLICE_SIZE]
 
 
 class Group(models.Model):
@@ -69,8 +70,17 @@ class Comment(models.Model):
         auto_now_add=True,
     )
 
+    def __str__(self):
+        return self.text[:SLICE_SIZE]
+
 
 class Follow(models.Model):
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'author'], name='unique_follow'
+            ),
+        ]
     user = models.ForeignKey(
         User,
         related_name='follower',
