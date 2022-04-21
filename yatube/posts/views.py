@@ -44,10 +44,9 @@ def profile(request, username):
     user_obj = get_object_or_404(User, username=username)
     user_posts = user_obj.posts.all().order_by('-pub_date')
     page_obj = paginator(request, user_posts, POSTS_ON_PAGE)
-    following = False
-    if request.user.is_authenticated:
-        following = Follow.objects.filter(user=request.user,
-                                          author=user_obj).exists()
+    following = request.user.is_authenticated and Follow.objects.filter(
+        user=request.user,
+        author=user_obj).exists()
     context = {
         'page_obj': page_obj,
         'user_obj': user_obj,
