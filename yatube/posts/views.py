@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
+from django.views.decorators.cache import cache_page
 
 from .forms import CommentForm, PostForm
 from .models import Follow, Group, Post
@@ -16,6 +17,7 @@ def paginator(request, posts, posts_on_page):
     return pages.get_page(page_number)
 
 
+@cache_page(60 * 20)
 def index(request):
     template = 'posts/index.html'
     posts = Post.objects.order_by('-pub_date')

@@ -3,7 +3,7 @@
 {% block content %}
 <h1>Последние обновления на сайте</h1>
 {% load cache %}
-{% cache 20 posts_index %}
+
   {% include 'posts/includes/switcher.html' %}
   {% for post in page_obj %}
     {% include 'includes/article.html' with show_author=True show_group=True %}
@@ -11,6 +11,6 @@
       <hr>
     {% endif %}
   {% endfor %}
-{% endcache %}
+
 {% include 'posts/includes/paginator.html' %}
 {% endblock %}

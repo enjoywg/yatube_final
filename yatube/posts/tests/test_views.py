@@ -34,6 +34,9 @@ class PostSetUpTestCase(TestCase):
             reverse('posts:profile', kwargs={'username': cls.user.username})
         ]
 
+    def setUp(self):
+        cache.clear()
+
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
@@ -56,6 +59,7 @@ class PostsViewsTests(PostSetUpTestCase):
         )
 
     def setUp(self):
+        super().setUp()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
 
@@ -188,8 +192,7 @@ class PostsViewsTests(PostSetUpTestCase):
             text='Тестовыйddddddd пост 2',
             group=self.group,
         )
-        cache.clear()
-        self.authorized_client.get(reverse('posts:index')).content
+        self.authorized_client.get(reverse('posts:index'))
         post_2.delete()
         content_after_delete = self.authorized_client.get(
             reverse('posts:index')).content
@@ -217,6 +220,7 @@ class PaginatorViewsTest(PostSetUpTestCase):
         )
 
     def setUp(self):
+        super().setUp()
         self.guest_client = Client()
 
     def test_paginator(self):
