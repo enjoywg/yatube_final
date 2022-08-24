@@ -1,0 +1,22 @@
+#copyright {
+    margin-left: 60px;
+}
+#about {
+    margin-right: 60px;
+    float: right;
+}
+footer p {
+    display: inline;
+}
+#navbarContent {
+    justify-content: flex-end;
+}
+
+@media (max-width: 600px) {
+    #copyright {
+        margin-left: 5px;
+    }
+    #about {
+        margin-right: 5px;
+    }
+}
